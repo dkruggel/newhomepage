@@ -1029,3 +1029,4 @@
 /Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/refint/newhomepage.dll
 /Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/newhomepage.pdb
 /Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/ref/newhomepage.dll
+/Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/newhomepage.sourcelink.json
