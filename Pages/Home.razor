@@ -182,6 +182,13 @@
                 };
             ");
         }
+        else
+        {
+            if (string.IsNullOrEmpty(currentLocation) && !isLoadingLocation)
+            {
+                await GetUserLocation();
+            }
+        }
     }
 
     private void UpdateTime(object? state)
