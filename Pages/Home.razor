@@ -301,8 +301,7 @@
     {
         try
         {
-            var apiKey = "fd12d2e256514c648a204025252808";
-            var forecastResponse = await Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=5&aqi=no&alerts=no");
+            var forecastResponse = await Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={Environment.GetEnvironmentVariable("WEATHERAPI")}&q={currentLocation}&days=5&aqi=no&alerts=no");
             weatherData = JsonSerializer.Deserialize<WeatherData>(forecastResponse);
             
             StateHasChanged();
