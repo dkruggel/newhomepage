@@ -77,7 +77,7 @@
                         {
                             <div class="forecast-item">
                                 <div class="day">@day.Date</div>
-                                <div class="temp">@day.Day.Low°/@day.Day.High°</div>
+                                <div class="temp">@day.Day.High°/@day.Day.Low°</div>
                                 <div class="desc">@day.Day.Condition.Description</div>
                                 <img src="@day.Day.Condition.Icon"/>
                             </div>
@@ -157,8 +157,6 @@
     {
         if (firstRender)
         {
-            try {
-                // Inject JavaScript functions for geolocation
             await JSRuntime.InvokeVoidAsync("eval", @"
                 window.getUserLocation = () => {
                     return new Promise((resolve, reject) => {
@@ -183,12 +181,6 @@
                     return newLocation;
                 };
             ");
-            
-            GetUserLocation();
-            }
-            catch (Exception) {
-                GetUserLocation();
-            }
         }
     }
 
@@ -243,7 +235,7 @@
                     
                     if (ipData != null && !string.IsNullOrEmpty(ipData.City))
                     {
-                        currentLocation = $"{ipData.City}, {ipData.CountryCode}";
+                        currentLocation = $"{ipData.Postal}";
                     }
                     else
                     {
@@ -252,7 +244,7 @@
                 }
                 catch
                 {
-                    currentLocation = "O'Fallon, MO"; // Final fallback
+                    currentLocation = "63366"; // Final fallback
                 }
             }
 
@@ -261,7 +253,7 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error getting location: {ex.Message}");
-            currentLocation = "O'Fallon, MO"; // Fallback
+            currentLocation = "63366"; // Fallback
             await LoadWeatherData();
         }
         finally
@@ -385,13 +377,13 @@
                     new CountdownEvent { Event = "🎉 Thanksgiving", Date = new DateTime(2025, 11, 27), IsHoliday = true }
                 };
                 
-                allEvents.AddRange(fallbackHolidays.Where(h => h.Date >= DateTime.Today.AddDays(-30)));
+                allEvents.AddRange(fallbackHolidays.Where(h => h.Date >= DateTime.Today));
             }
             
             // Sort by date and limit to reasonable number
             countdownEvents = allEvents
                 .OrderBy(e => e.Date)
-                .Take(12) // Limit to 12 events to avoid clutter
+                .Take(10) // Limit to 10 events to avoid clutter
                 .ToList();
             
             StateHasChanged();
@@ -514,5 +506,6 @@
         public string CountryName { get; set; } = "";
         public double Latitude { get; set; }
         public double Longitude { get; set; }
+        public string Postal { get; set; } = "";
     }
 }
