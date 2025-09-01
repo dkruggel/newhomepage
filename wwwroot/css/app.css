@@ -453,6 +453,15 @@ main {
   font-family: 'Varela Round', sans-serif;
 }
 
+.today-temp {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--dark-accent);
+  font-family: 'Varela Round', sans-serif;
+  text-shadow: 0 2px 20px rgba(88, 166, 255, 0.4);
+  margin-left: auto;
+}
+
 .forecast {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -478,10 +487,11 @@ main {
 
 .forecast-item .day {
   font-weight: 400;
-  color: var(--dark-text-primary);
+  color: var(--dark-accent);
   margin-bottom: 12px;
   font-size: 16px;
   font-family: 'Varela Round', sans-serif;
+  text-shadow: 0 2px 20px rgba(88, 166, 255, 0.4);
 }
 
 .forecast-item .temp {

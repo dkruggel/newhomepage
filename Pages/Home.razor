@@ -71,12 +71,20 @@
                         <div class="current-temp">@weatherData.Current.Temp_F°F</div>
                         <div class="current-desc">@weatherData.Current.Condition.Description</div>
                         <img src="@weatherData.Current.Condition.Icon"/>
+                        <div class="today-temp">@weatherData.Forecast.ForecastDays[0].Day.High°/@weatherData.Forecast.ForecastDays[0].Day.Low°</div>
                     </div>
                     <div class="forecast">
-                        @foreach (var day in weatherData.Forecast.ForecastDays)
+                        @foreach (var day in weatherData.Forecast.ForecastDays.Skip(1))
                         {
                             <div class="forecast-item">
-                                <div class="day">@day.Date</div>
+                                <div class="day">
+                                    @{
+                                        var date = DateTime.Parse(day.Date);
+                                    }
+                                    @date.ToString("ddd")</div>
+                                <div class="day">
+                                    @date.ToString("yyyy.MM.dd")
+                                </div>
                                 <div class="temp">@day.Day.High°/@day.Day.Low°</div>
                                 <div class="desc">@day.Day.Condition.Description</div>
                                 <img src="@day.Day.Condition.Icon"/>
@@ -301,7 +309,7 @@
         try
         {
             var apiKey = "fd12d2e256514c648a204025252808";
-            var forecastResponse = await Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=5&aqi=no&alerts=no");
+            var forecastResponse = await Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6&aqi=no&alerts=no");
             weatherData = JsonSerializer.Deserialize<WeatherData>(forecastResponse);
             
             StateHasChanged();
