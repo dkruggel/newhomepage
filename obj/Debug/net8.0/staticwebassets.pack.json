@@ -41,10 +41,6 @@
       "PackagePath": "staticwebassets/index.html"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/sample-data/weather.json",
-      "PackagePath": "staticwebassets/sample-data/weather.json"
-    },
-    {
       "Id": "obj/Debug/net8.0/staticwebassets/msbuild.build.newhomepage.props",
       "PackagePath": "build\\newhomepage.props"
     },

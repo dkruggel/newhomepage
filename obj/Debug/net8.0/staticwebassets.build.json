@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "7lleoK7L4ul8egseCa1/uZ5NOqpppbYeTwk84v2F6TM=",
+  "Hash": "AWEnhqgnqOirMDuAMqsdmdQZNORlu5n32ZFMSBwiLto=",
   "Source": "newhomepage",
   "BasePath": "/",
   "Mode": "Root",
@@ -7938,25 +7938,6 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/index.html"
-    },
-    {
-      "Identity": "/Users/davidkruggel/Projects/newhomepage/wwwroot/sample-data/weather.json",
-      "SourceId": "newhomepage",
-      "SourceType": "Discovered",
-      "ContentRoot": "/Users/davidkruggel/Projects/newhomepage/wwwroot/",
-      "BasePath": "/",
-      "RelativePath": "sample-data/weather.json",
-      "AssetKind": "All",
-      "AssetMode": "All",
-      "AssetRole": "Primary",
-      "AssetMergeBehavior": "PreferTarget",
-      "AssetMergeSource": "",
-      "RelatedAsset": "",
-      "AssetTraitName": "",
-      "AssetTraitValue": "",
-      "CopyToOutputDirectory": "Never",
-      "CopyToPublishDirectory": "PreserveNewest",
-      "OriginalItemSpec": "wwwroot/sample-data/weather.json"
     }
   ]
 }
