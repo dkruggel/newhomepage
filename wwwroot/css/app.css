@@ -801,3 +801,106 @@ main {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--dark-text-secondary);
 }
+
+/* Skeleton loading utilities (quick UI/UX win) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -150px;
+  height: 100%;
+  width: 150px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.skeleton-text {
+  height: 1em;
+  width: 100%;
+  margin: 0.35rem 0;
+  border-radius: 4px;
+}
+
+.skeleton-title {
+  height: 1.6rem;
+  width: 60%;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-rect {
+  height: 6rem;
+  width: 100%;
+}
+
+/* Utility for visually-hidden but accessible text */
+.sr-only {
+  position: absolute !important;
+  height: 1px;
+  width: 1px;
+  overflow: hidden;
+  clip: rect(1px, 1px, 1px, 1px);
+  white-space: nowrap; /* added line */
+}
+
+/* Make skip link visible when focused */
+.sr-only-focusable:active,
+.sr-only-focusable:focus {
+  position: static !important;
+  width: auto;
+  height: auto;
+  margin: 0.5rem;
+  padding: 0.5rem 1rem;
+  clip: auto;
+  background: var(--dark-bg-elevated);
+  color: var(--dark-text-primary);
+  border: 1px solid var(--dark-border);
+  border-radius: 6px;
+  text-decoration: none;
+  z-index: 10000;
+}
+
+/* Focus-visible and keyboard focus improvements */
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 3px solid rgba(88, 166, 255, 0.25);
+  outline-offset: 2px;
+}
+
+/* Respect prefers-reduced-motion for focus animations */
+@media (prefers-reduced-motion: reduce) {
+  button:focus,
+  a:focus {
+    outline: 3px solid rgba(88, 166, 255, 0.2);
+  }
+}
+/* Reduced-motion preference respect */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    display: none;
+  }
+}

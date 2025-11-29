@@ -26,6 +26,10 @@ build_property._RazorSourceGeneratorDebug =
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/davidkruggel/repos/newhomepage/Pages/EventsEditor.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXMvRXZlbnRzRWRpdG9yLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/davidkruggel/repos/newhomepage/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 

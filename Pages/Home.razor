@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using System.Text.Json
 @using System.Text.Json.Serialization
+@using Microsoft.AspNetCore.Components.Web
 @implements IDisposable
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
@@ -29,7 +30,7 @@
             <a class="navbar-brand" href="#">David Kruggel</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
-                aria-label="Toggle navigation">
+                aria-label="Toggle navigation" tabindex="0" @onkeydown="@(e => OnTogglerKeyDown(e))">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -47,10 +48,12 @@
     <div class="menu-overlay @(isMenuOpen ? "show" : "")" @onclick="CloseMenu"></div>
 
     <!-- Side Menu -->
-    <nav class="side-menu @(isMenuOpen ? "open" : "")">
+    <nav class="side-menu @(isMenuOpen ? "open" : "")" role="navigation" aria-label="Main menu"
+        aria-hidden="@(isMenuOpen ? "false" : "true")">
         <div class="menu-header">
             <h3>Menu</h3>
-            <button class="close-btn" @onclick="CloseMenu">&times;</button>
+            <button class="close-btn" @onclick="CloseMenu" tabindex="0"
+                @onkeydown="@(e => OnCloseKeyDown(e))">&times;</button>
         </div>
         <ul class="menu-items">
             <li><a href="/">Home</a></li>
@@ -61,7 +64,7 @@
     </nav>
 
     <!-- Main Content -->
-    <main class="main-content">
+    <main id="main-content" class="main-content" tabindex="-1">
         <!-- Weather Card -->
         <div class="card weather-card">
             <div class="card-header">
@@ -70,7 +73,36 @@
                     @weatherData?.Location.Region</span>
             </div>
             <div class="card-body">
-                @if (weatherData != null)
+                @if (isLoadingWeather)
+                {
+                    <!-- Skeleton placeholders while weather loads -->
+                    <div class="current-weather">
+                        <div class="skeleton skeleton-title" style="width:120px;height:56px;"></div>
+                        <div style="flex:1">
+                            <div class="skeleton skeleton-text" style="width:40%"></div>
+                            <div class="skeleton skeleton-text" style="width:30%"></div>
+                        </div>
+                        <div class="skeleton skeleton-rect" style="width:64px;height:64px;" />
+                    </div>
+                    <div class="forecast" aria-hidden="true">
+                        @for (int i = 0; i < 3; i++)
+                        {
+                            <div class="forecast-item">
+                                <div class="skeleton skeleton-text" style="width:60%"></div>
+                                <div class="skeleton skeleton-text" style="width:80%"></div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(weatherLoadError))
+                {
+                    <div role="alert" class="card-body">
+                        <div class="loading">Error loading weather: @weatherLoadError</div>
+                        <button class="btn btn-primary" @onclick="LoadWeatherData">Retry</button>
+                        <button class="btn btn-secondary ms-2" @onclick="ClearWeatherCache">Clear Cache</button>
+                    </div>
+                }
+                else if (weatherData != null)
                 {
                     <div class="current-weather">
                         <div class="current-temp">@weatherData.Current.Temp_F°F</div>
@@ -101,7 +133,7 @@
                 }
                 else
                 {
-                    <div class="loading">Loading weather data...</div>
+                    <div class="loading">Weather is unavailable.</div>
                 }
             </div>
         </div>
@@ -110,9 +142,22 @@
         <div class="card countdown-card">
             <div class="card-header">
                 <h2>Important Dates</h2>
+                <a class="btn btn-link" href="/events-editor">Manage Events</a>
             </div>
             <div class="card-body">
-                @if (countdownEvents != null && countdownEvents.Any())
+                @if (isLoadingEvents)
+                {
+                    <div>
+                        <div class="skeleton skeleton-title" style="width:40%"></div>
+                        <div class="skeleton skeleton-text" style="width:100%"></div>
+                        <div class="skeleton skeleton-text" style="width:90%"></div>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(eventsLoadError))
+                {
+                    <div role="alert" class="loading">Error loading events: @eventsLoadError</div>
+                }
+                else if (countdownEvents != null && countdownEvents.Any())
                 {
                     @foreach (var eventItem in countdownEvents)
                     {
@@ -143,7 +188,7 @@
                 }
                 else
                 {
-                    <div class="loading">Loading events...</div>
+                    <div class="loading">No upcoming events. Add some in Manage Events.</div>
                 }
             </div>
         </div>
@@ -158,6 +203,11 @@
     private List<CountdownEvent>? countdownEvents;
     private bool isLoadingLocation = false;
     private string currentLocation = "";
+    // Quick-win UI state
+    private bool isLoadingWeather = true;
+    private bool isLoadingEvents = true;
+    private string? weatherLoadError = null;
+    private string? eventsLoadError = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -165,8 +215,9 @@
         timer = new Timer(UpdateTime, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
 
         // Load data
-        await LoadWeatherData();
-        await LoadCountdownEvents();
+        // Start loads in parallel but keep UI responsive
+        _ = LoadWeatherData();
+        _ = LoadCountdownEvents();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -321,20 +372,78 @@ return newLocation;
 
     private async Task LoadWeatherData()
     {
+        isLoadingWeather = true;
+        weatherLoadError = null;
+        StateHasChanged();
+
         try
         {
             // Read API key from configuration (wwwroot/appsettings.json or other configuration provider).
             var apiKey = Configuration["Weather:ApiKey"] ?? Configuration["WeatherApiKey"];
 
+            var cacheKey = $"weather-cache:{(string.IsNullOrEmpty(currentLocation) ? "default" : currentLocation)}";
+
+            // Try cache first (15 minute TTL)
+            try
+            {
+                var cached = await JSRuntime.InvokeAsync<string>("appLocalStorage.getItem", cacheKey);
+                if (!string.IsNullOrEmpty(cached))
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(cached);
+                        if (doc.RootElement.TryGetProperty("timestamp", out var tsElem) && doc.RootElement.TryGetProperty("response", out var
+                        respElem))
+                        {
+                            var ts = tsElem.GetDateTime();
+                            if ((DateTime.UtcNow - ts).TotalMinutes <= 15)
+                            {
+                                var resp = respElem.GetString();
+                                if (!string.IsNullOrEmpty(resp))
+                                {
+                                    weatherData = JsonSerializer.Deserialize<WeatherData>(resp);
+                                    isLoadingWeather = false;
+                                    StateHasChanged();
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                    catch { /* cache parse errors - ignore and continue */ }
+                }
+            }
+            catch { /* localStorage may be unavailable */ }
+
+            string forecastResponse;
             if (string.IsNullOrWhiteSpace(apiKey))
             {
-                Console.WriteLine("Weather API key not configured. Set 'Weather:ApiKey' in wwwroot/appsettings.json or use a server-side proxy to avoid exposing secrets in the client.");
-                return;
+                // No client-side API key: try calling a server-side proxy if available at /api/weather
+                try
+                {
+                    forecastResponse = await Http.GetStringAsync($"/api/weather?location={Uri.EscapeDataString(currentLocation)}");
+                }
+                catch (Exception ex)
+                {
+                    weatherLoadError = "No API key configured and server proxy unavailable";
+                    Console.WriteLine($"Weather proxy error: {ex.Message}");
+                    return;
+                }
             }
-
-            var forecastResponse = await
-            Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6&aqi=no&alerts=no");
+            else
+            {
+                forecastResponse = await
+                Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6&aqi=no&alerts=no");
+            }
             weatherData = JsonSerializer.Deserialize<WeatherData>(forecastResponse);
+
+            // Cache response
+            try
+            {
+                var cacheObj = new { timestamp = DateTime.UtcNow, response = forecastResponse };
+                var cacheJson = JsonSerializer.Serialize(cacheObj);
+                await JSRuntime.InvokeVoidAsync("appLocalStorage.setItem", cacheKey, cacheJson);
+            }
+            catch { /* ignore cache failures */ }
 
             StateHasChanged();
         }
@@ -342,62 +451,119 @@ return newLocation;
         {
             // Handle error - you might want to log this
             Console.WriteLine($"Error loading weather data: {ex.Message}");
+            weatherLoadError = ex.Message;
+        }
+        finally
+        {
+            isLoadingWeather = false;
+            StateHasChanged();
+            // Announce status to screen readers
+            try
+            {
+                var announce = string.IsNullOrEmpty(weatherLoadError) ? "Weather updated" : $"Weather failed to load: {weatherLoadError}";
+                await JSRuntime.InvokeVoidAsync("setAriaLive", announce);
+            }
+            catch { }
         }
     }
 
     private async Task LoadCountdownEvents()
     {
+        isLoadingEvents = true;
+        eventsLoadError = null;
+        StateHasChanged();
+
         try
         {
             var allEvents = new List<CountdownEvent>();
 
-            // Load personal events from JSON file
+            // First check localStorage for user-managed events
             try
             {
-                var json = await Http.GetStringAsync("data/events.json");
-
-                // Use EventParser service to convert JSON entries to CountdownEvent with resolved next-occurrence dates.
-                var parsed = EventParser.ParsePersonalEvents(json, DateTime.Today);
-                if (parsed != null && parsed.Count > 0)
+                var stored = await JSRuntime.InvokeAsync<string>("appLocalStorage.getItem", "personal-events");
+                if (!string.IsNullOrEmpty(stored))
                 {
-                    allEvents.AddRange(parsed);
+                    try
+                    {
+                        var parsed = EventParser.ParsePersonalEvents(stored, DateTime.Today);
+                        if (parsed != null && parsed.Count > 0)
+                        {
+                            allEvents.AddRange(parsed);
+                        }
+                    }
+                    catch { /* parsing failures -> fall back to file */ }
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading personal events: {ex.Message}");
+            catch { /* localStorage not available -> continue */ }
 
-                // Add fallback personal events (month/day-only examples)
-                allEvents.AddRange(new List<CountdownEvent>
-{
-new CountdownEvent { Event = "Birthday Party", Date = new DateTime(DateTime.Today.Year, 9, 15) >= DateTime.Today ? new
-DateTime(DateTime.Today.Year, 9, 15) : new DateTime(DateTime.Today.Year + 1, 9, 15), IsHoliday = false },
-new CountdownEvent { Event = "Project Deadline", Date = new DateTime(DateTime.Today.Year, 8, 30) >= DateTime.Today ? new
-DateTime(DateTime.Today.Year, 8, 30) : new DateTime(DateTime.Today.Year + 1, 8, 30), IsHoliday = false }
-});
+            // If no local events, fallback to repo file
+            if (!allEvents.Any())
+            {
+                try
+                {
+                    var json = await Http.GetStringAsync("data/events.json");
+                    var parsed = EventParser.ParsePersonalEvents(json, DateTime.Today);
+                    if (parsed != null && parsed.Count > 0)
+                    {
+                        allEvents.AddRange(parsed);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error loading personal events: {ex.Message}");
+                }
             }
 
-            // Load holidays from API
+            // Load holidays from API (best-effort). Fetch current year and next year so near-year-end
+            // holidays (e.g. New Year's Day) are included.
             try
             {
                 var currentYear = DateTime.Now.Year;
-                var holidayJson = await Http.GetStringAsync($"https://date.nager.at/api/v3/publicholidays/{currentYear}/US");
-                var holidays = JsonSerializer.Deserialize<List<HolidayData>>(holidayJson, new JsonSerializerOptions
+                // Always fetch the current year. Only fetch the next year after November 1
+                var yearsToFetch = new List<int> { currentYear };
+                if (DateTime.Now > new DateTime(currentYear, 11, 1))
                 {
-                    PropertyNameCaseInsensitive = true
-                });
+                    yearsToFetch.Add(currentYear + 1);
+                }
 
-                if (holidays != null)
+                var fetched = new List<HolidayData>();
+
+                foreach (var y in yearsToFetch)
                 {
-                    // Convert holidays to CountdownEvent and filter to only future/recent holidays
-                    var holidayEvents = holidays
-                    .Where(h => h.Date >= DateTime.Today) // Include holidays from last 30 days >= DateTime.Today.AddDays(-30)
+                    try
+                    {
+                        var holidayJson = await Http.GetStringAsync($"https://date.nager.at/api/v3/publicholidays/{y}/US");
+                        var holidays = JsonSerializer.Deserialize<List<HolidayData>>(holidayJson, new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true
+                        });
+
+                        if (holidays != null)
+                        {
+                            fetched.AddRange(holidays);
+                        }
+                    }
+                    catch (Exception innerEx)
+                    {
+                        // ignore per-year failures but continue
+                        Console.WriteLine($"Warning: failed to fetch holidays for {y}: {innerEx.Message}");
+                    }
+                }
+
+                if (fetched.Any())
+                {
+                    // Deduplicate by date+name and include only upcoming dates
+                    var holidayEvents = fetched
+                    .GroupBy(h => (h.Date.Date, h.Event))
+                    .Select(g => g.First())
+                    .Where(h => h.Date.Date >= DateTime.Today)
                     .Select(h => new CountdownEvent
                     {
                         Event = $"🎉 {h.Event}",
                         Date = h.Date.Date,
                         IsHoliday = true
                     })
+                    .OrderBy(h => h.Date)
                     .ToList();
 
                     allEvents.AddRange(holidayEvents);
@@ -406,41 +572,71 @@ DateTime(DateTime.Today.Year, 8, 30) : new DateTime(DateTime.Today.Year + 1, 8, 
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading holidays: {ex.Message}");
-
-                // Add some fallback US holidays
-                var fallbackHolidays = new List<CountdownEvent>
-{
-new CountdownEvent { Event = "🎉 Christmas Day", Date = new DateTime(2025, 12, 25), IsHoliday = true },
-new CountdownEvent { Event = "🎉 New Year's Day", Date = new DateTime(2026, 1, 1), IsHoliday = true },
-new CountdownEvent { Event = "🎉 Independence Day", Date = new DateTime(2025, 7, 4), IsHoliday = true },
-new CountdownEvent { Event = "🎉 Thanksgiving", Date = new DateTime(2025, 11, 27), IsHoliday = true }
-};
-
-                allEvents.AddRange(fallbackHolidays.Where(h => h.Date >= DateTime.Today));
             }
 
-            // Sort by date and limit to reasonable number
+            // Sort by date and limit
             countdownEvents = allEvents
             .OrderBy(e => e.Date)
-            .Take(10) // Limit to 10 events to avoid clutter
+            .Take(10)
             .ToList();
 
             StateHasChanged();
         }
         catch (Exception ex)
         {
-            // Final fallback
             Console.WriteLine($"Error in LoadCountdownEvents: {ex.Message}");
-            countdownEvents = new List<CountdownEvent>
-{
-new CountdownEvent { Event = "Sample Event", Date = DateTime.Today.AddDays(30), IsHoliday = false }
-};
+            eventsLoadError = ex.Message;
+            countdownEvents = new List<CountdownEvent> { new CountdownEvent { Event = "Sample Event", Date =
+DateTime.Today.AddDays(30), IsHoliday = false } };
             StateHasChanged();
+        }
+        finally
+        {
+            isLoadingEvents = false;
+            StateHasChanged();
+            try
+            {
+                var announce = string.IsNullOrEmpty(eventsLoadError) ? "Events updated" : $"Events failed to load: {eventsLoadError}";
+                await JSRuntime.InvokeVoidAsync("setAriaLive", announce);
+            }
+            catch { }
         }
     }
 
     public void Dispose()
     {
         timer?.Dispose();
+    }
+
+    private void OnTogglerKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " " || e.Code == "Space")
+        {
+            ToggleMenu();
+        }
+    }
+
+    private void OnCloseKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " " || e.Code == "Space")
+        {
+            CloseMenu();
+        }
+    }
+
+    private async Task ClearWeatherCache()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("clearWeatherCache");
+        }
+        catch { }
+
+        // Force reload of weather
+        weatherData = null;
+        weatherLoadError = null;
+        isLoadingWeather = true;
+        StateHasChanged();
+        await LoadWeatherData();
     }
 }

@@ -18,6 +18,9 @@
   </head>
 
   <body>
+    <a class="sr-only sr-only-focusable" href="#main-content"
+      >Skip to content</a
+    >
     <div id="app">
       <svg class="loading-progress">
         <circle r="40%" cx="50%" cy="50%" />
@@ -25,6 +28,72 @@
       </svg>
       <div class="loading-progress-text"></div>
     </div>
+
+    <!-- ARIA live region for polite announcements (screen-reader only) -->
+    <div
+      id="aria-live"
+      class="sr-only"
+      aria-live="polite"
+      aria-atomic="true"
+    ></div>
+
+    <!-- Small JS helpers for localStorage and app utilities -->
+    <script>
+      window.appLocalStorage = {
+        getItem: function (key) {
+          try {
+            return localStorage.getItem(key);
+          } catch (e) {
+            return null;
+          }
+        },
+        setItem: function (key, value) {
+          try {
+            localStorage.setItem(key, value);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        },
+        removeItem: function (key) {
+          try {
+            localStorage.removeItem(key);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        },
+      };
+      // Simple aria-live helper
+      window.setAriaLive = function (text) {
+        try {
+          var el = document.getElementById('aria-live');
+          if (el) el.innerText = text || '';
+        } catch (e) {}
+      };
+      // Simple aria-live helper
+      window.setAriaLive = function (text) {
+        try {
+          var el = document.getElementById('aria-live');
+          if (el) el.innerText = text || '';
+        } catch (e) {}
+      };
+
+      // Clear cached weather entries (localStorage keys starting with 'weather-cache:')
+      window.clearWeatherCache = function () {
+        try {
+          for (var i = localStorage.length - 1; i >= 0; i--) {
+            var key = localStorage.key(i);
+            if (key && key.startsWith('weather-cache:')) {
+              localStorage.removeItem(key);
+            }
+          }
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
+    </script>
 
     <div id="blazor-error-ui">
       An unhandled error has occurred.

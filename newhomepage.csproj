@@ -15,6 +15,9 @@
   <ItemGroup>
     <Compile Remove="tests/**" />
     <None Remove="tests/**" />
+    <!-- Exclude server project files (kept in repository but built separately) -->
+    <Compile Remove="Server/**" />
+    <None Remove="Server/**" />
   </ItemGroup>
 
 </Project>
