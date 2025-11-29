@@ -1,0 +1,161 @@
+@page "/settings"
+@using System.Text.Json
+@using newhomepage.Shared.Models
+@inject IJSRuntime JSRuntime
+
+<div class="app-container">
+    <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <div class="container-fluid navbar-content">
+            <a class="navbar-brand" href="#">Settings</a>
+            <div class="clock d-flex">Settings</div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="card">
+            <div class="card-header">
+                <h2>Application Settings</h2>
+                <a class="btn btn-link" href="/">Back</a>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Default location (city, region or postal code)</label>
+                    <input class="form-control" @bind="settings.DefaultLocation"
+                        placeholder="e.g. Seattle, US or 98101"></input>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Urgent threshold (days)</label>
+                    <input type="number" class="form-control" @bind="urgentThresholdStr" min="0"></input>
+                    <div class="form-text">Events with remaining days &lt;= this value are marked urgent.</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Include next-year holidays after (MM-DD)</label>
+                    <input class="form-control" @bind="settings.NextYearHolidaysIncludeAfter" @oninput="ValidateNextYearField"
+                        placeholder="11-01"></input>
+                    <div class="form-text">When the calendar passes this month/day of the current year, holidays for
+                        next year will also be fetched.</div>
+                    @if (!string.IsNullOrEmpty(nextYearError))
+                    {
+                        <div class="text-danger mt-1">@nextYearError</div>
+                    }
+                </div>
+
+                <div class="mt-3">
+                    <button class="btn btn-primary" @onclick="Save" disabled="@(!isValidNextYear)">Save</button>
+                    <button class="btn btn-secondary ms-2" @onclick="Reset">Reset</button>
+                    <button class="btn btn-link ms-2" @onclick="Clear">Clear</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+@code {
+    private AppSettings settings = new();
+    private string urgentThresholdStr = "7";
+    private string nextYearError = string.Empty;
+    private bool isValidNextYear = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("appLocalStorage.getItem", "app-settings");
+            if (!string.IsNullOrEmpty(json))
+            {
+                settings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+            }
+        }
+        catch
+        {
+            settings = new AppSettings();
+        }
+
+        urgentThresholdStr = (settings.EventUrgentThresholdDays ?? 7).ToString();
+    }
+
+    private async Task Save()
+    {
+        // validate urgent threshold
+        if (int.TryParse(urgentThresholdStr, out var val))
+        {
+            settings.EventUrgentThresholdDays = val;
+        }
+
+        // validate MM-DD field before saving
+        ValidateNextYearField(null);
+        if (!isValidNextYear)
+        {
+            return; // don't save if invalid
+        }
+
+        try
+        {
+            var json = JsonSerializer.Serialize(settings);
+            // Use the dispatcher which writes to localStorage and notifies the .NET bridge
+            await JSRuntime.InvokeVoidAsync("dispatchAppSettings", json);
+        }
+        catch { }
+    }
+
+    private void ValidateNextYearField(ChangeEventArgs? _)
+    {
+        var v = settings.NextYearHolidaysIncludeAfter?.Trim() ?? string.Empty;
+        if (string.IsNullOrEmpty(v))
+        {
+            nextYearError = string.Empty;
+            isValidNextYear = true;
+            return;
+        }
+
+        // Expect MM-DD where MM is 01-12 and DD is 01-31 (we'll check day validity for the month)
+        var parts = v.Split('-', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length != 2 || !int.TryParse(parts[0], out var mon) || !int.TryParse(parts[1], out var day))
+        {
+            nextYearError = "Invalid format — expected MM-DD, e.g. 11-01";
+            isValidNextYear = false;
+            return;
+        }
+
+        if (mon < 1 || mon > 12)
+        {
+            nextYearError = "Month must be between 01 and 12";
+            isValidNextYear = false;
+            return;
+        }
+
+        // Use a non-leap-year safe check (2001) to validate day range for the month
+        var maxDay = DateTime.DaysInMonth(2001, mon);
+        if (day < 1 || day > maxDay)
+        {
+            nextYearError = $"Day must be between 01 and {maxDay:00} for month {mon:00}";
+            isValidNextYear = false;
+            return;
+        }
+
+        // ok
+        nextYearError = string.Empty;
+        isValidNextYear = true;
+    }
+
+    private async Task Reset()
+    {
+        settings = new AppSettings { NextYearHolidaysIncludeAfter = "11-01", EventUrgentThresholdDays = 7 };
+        urgentThresholdStr = "7";
+        await Save();
+    }
+
+    private async Task Clear()
+    {
+        try { await JSRuntime.InvokeVoidAsync("appLocalStorage.removeItem", "app-settings"); } catch { }
+        settings = new AppSettings();
+        urgentThresholdStr = "7";
+    }
+}

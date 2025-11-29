@@ -2,6 +2,7 @@
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using Microsoft.AspNetCore.Components.Web
+@using newhomepage.Shared.Models
 @implements IDisposable
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
@@ -162,7 +163,7 @@
                     @foreach (var eventItem in countdownEvents)
                     {
                         var daysUntil = (eventItem.Date - DateTime.Today).Days;
-                        <div class="countdown-item @(daysUntil <= 7 ? "urgent" : "") @(eventItem.IsHoliday ? "holiday" : "")">
+                        <div class="countdown-item @(daysUntil <= urgentThresholdDays ? "urgent" : "") @(eventItem.IsHoliday ? "holiday" : "")">
                             <div class="event-info">
                                 <div class="event-name">@eventItem.Event</div>
                                 <div class="event-date">@eventItem.Date.ToString("MMMM dd, yyyy")</div>
@@ -209,15 +210,48 @@
     private string? weatherLoadError = null;
     private string? eventsLoadError = null;
 
+    // App settings (from localStorage)
+    private AppSettings appSettings = new();
+    private int urgentThresholdDays = 7;
+    private string nextYearIncludeAfter = "11-01"; // MM-DD
+
     protected override async Task OnInitializedAsync()
     {
         // Start the clock timer
         timer = new Timer(UpdateTime, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
 
-        // Load data
+        // Load app settings, then start data loads
+        await LoadAppSettings();
+
         // Start loads in parallel but keep UI responsive
         _ = LoadWeatherData();
         _ = LoadCountdownEvents();
+    }
+
+    private async Task LoadAppSettings()
+    {
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("appLocalStorage.getItem", "app-settings");
+            if (!string.IsNullOrEmpty(json))
+            {
+                try
+                {
+                    appSettings = JsonSerializer.Deserialize<AppSettings>(json) ?? new AppSettings();
+                }
+                catch { appSettings = new AppSettings(); }
+            }
+        }
+        catch { appSettings = new AppSettings(); }
+
+        urgentThresholdDays = appSettings.EventUrgentThresholdDays ?? 7;
+        nextYearIncludeAfter = string.IsNullOrEmpty(appSettings.NextYearHolidaysIncludeAfter) ? "11-01" :
+        appSettings.NextYearHolidaysIncludeAfter;
+
+        if (!string.IsNullOrEmpty(appSettings.DefaultLocation) && string.IsNullOrEmpty(currentLocation))
+        {
+            currentLocation = appSettings.DefaultLocation;
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -248,6 +282,25 @@ const newLocation = prompt('Enter your location (city, state or city, country):'
 return newLocation;
 };
 ");
+
+            // Register a .NET-side handler to receive app-settings change notifications from JS
+            try
+            {
+                // Wire the SettingsBridge event so Home can react when settings change via dispatchAppSettings
+                newhomepage.Shared.Services.SettingsBridge.SettingsChanged += async (json) =>
+                {
+                    try
+                    {
+                        // Reload settings and refresh dependent data
+                        await LoadAppSettings();
+                        _ = LoadWeatherData();
+                        _ = LoadCountdownEvents();
+                        await InvokeAsync(StateHasChanged);
+                    }
+                    catch { }
+                };
+            }
+            catch { }
         }
         else
         {
@@ -519,12 +572,21 @@ return newLocation;
             try
             {
                 var currentYear = DateTime.Now.Year;
-                // Always fetch the current year. Only fetch the next year after November 1
+                // Always fetch the current year. Optionally fetch next year after the configured threshold (MM-DD)
                 var yearsToFetch = new List<int> { currentYear };
-                if (DateTime.Now > new DateTime(currentYear, 11, 1))
+                try
                 {
-                    yearsToFetch.Add(currentYear + 1);
+                    var parts = nextYearIncludeAfter.Split('-', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 2 && int.TryParse(parts[0], out var mon) && int.TryParse(parts[1], out var day))
+                    {
+                        var threshold = new DateTime(currentYear, Math.Clamp(mon, 1, 12), Math.Clamp(day, 1, DateTime.DaysInMonth(currentYear, Math.Clamp(mon,1,12))));
+                        if (DateTime.Now > threshold)
+                        {
+                            yearsToFetch.Add(currentYear + 1);
+                        }
+                    }
                 }
+                catch { /* invalid config -> skip next-year fetch */ }
 
                 var fetched = new List<HolidayData>();
 

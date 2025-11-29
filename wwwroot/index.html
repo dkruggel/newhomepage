@@ -93,6 +93,35 @@
           return false;
         }
       };
+
+      // Dispatcher to save settings and notify Blazor (C#) immediately.
+      // It writes to localStorage and then attempts to call the static JSInvokable
+      // method 'OnAppSettingsChangedFromJs' on the .NET side.
+      window.dispatchAppSettings = function (json) {
+        try {
+          localStorage.setItem('app-settings', json);
+        } catch (e) {
+          // ignore
+        }
+
+        // If Blazor has been initialized and DotNet exists, try invoking the JSInvokable
+        try {
+          if (window.DotNet && window.DotNet.invokeMethodAsync) {
+            // Call the JSInvokable method defined in Shared.Services.SettingsBridge
+            // Namespace: newhomepage.Shared.Services
+            return window.DotNet.invokeMethodAsync(
+              'newhomepage',
+              'OnAppSettingsChangedFromJs',
+              json
+            ).catch(function (err) {
+              console.warn('dispatchAppSettings: DotNet invoke failed', err);
+            });
+          }
+        } catch (e) {
+          // swallow
+        }
+        return Promise.resolve();
+      };
     </script>
 
     <div id="blazor-error-ui">

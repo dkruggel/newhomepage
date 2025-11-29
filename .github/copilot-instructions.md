@@ -10,6 +10,17 @@ This repository is a small Blazor WebAssembly single-page app (TargetFramework: 
 
 When editing UI/behavior, prefer `Pages/*.razor` and the layout files; when editing static content (images, JSON) update `wwwroot/` directly.
 
+## Important runtime keys and notification hooks
+
+- app-settings (localStorage key): JSON serialized AppSettings with the schema defined in `Shared/Models/Settings.cs`.
+  - Fields: `DefaultLocation` (string), `EventUrgentThresholdDays` (int?), `NextYearHolidaysIncludeAfter` (MM-DD string).
+  - The app saves and reads this key at runtime. To immediately apply settings from JavaScript, call the helper `dispatchAppSettings(json)` defined in `wwwroot/index.html`. This will both write the value to localStorage and invoke the static JSInvokable method `newhomepage.Shared.Services.SettingsBridge.OnAppSettingsChangedFromJs` which raises a C# event the app subscribes to.
+
+## Quick tips for making settings apply immediately
+
+- The client implements a small JS->C# bridge: `dispatchAppSettings(json)` will call into the Blazor runtime if available. When changing app-settings from code (tests or scripts), prefer calling that helper so the app updates without a full page reload.
+- The C# side exposes `Shared.Services.SettingsBridge.SettingsChanged` as an event you can subscribe to. Handlers receive the raw JSON string and should rehydrate AppSettings via `JsonSerializer.Deserialize<AppSettings>(json)` then re-run any dependent loads (weather, events).
+
 ## Important patterns & examples (do this exactly)
 
 - Relative data fetches use the app base address via `HttpClient` registered in `Program.cs`. Example: in `Home.razor` the personal events file is loaded with `await Http.GetStringAsync("data/events.json")` — editing `wwwroot/data/events.json` changes what the app reads at runtime.
@@ -27,11 +38,30 @@ When editing UI/behavior, prefer `Pages/*.razor` and the layout files; when edit
 - Fast-edit loop: you can use `dotnet watch run` in the project folder if you have the SDK tooling installed.
 - Debugging: use browser DevTools for client-side exceptions and `Console.WriteLine`/console logs in `dotnet run` terminal output. You can also attach Visual Studio / VS Code to the Blazor WebAssembly debugging session.
 
+## Running the optional server-side proxy (weather)
+
+The repository includes a minimal `Server/` project that can proxy the Weather API so you don't have to embed a client key. It's optional and intentionally excluded from the client build to avoid conflicts, but you can run it separately during development:
+
+- Build and run the server from the `Server` folder (if present): `dotnet run --project Server/Server.csproj`.
+- The proxy expects a server-side environment variable `WEATHER_API_KEY` or you can modify `Program.cs` to read from appsettings. The proxy exposes `/api/weather?location=...` which the client will use automatically when no client `Weather:ApiKey` is configured.
+
+Note: the Server project is optional. If you prefer not to use it, set `Weather:ApiKey` in `wwwroot/appsettings.json` for local dev (remember that shipping keys in client builds is insecure).
+
 ## Project-specific conventions
 
 - Models are often declared inline in `Pages/Home.razor` (see classes like `WeatherData`, `CountdownEvent`, etc.). When adding or reusing models prefer creating a new `Shared/Models` or `Models` file only if the type will be reused across pages — otherwise keeping them next to consumers keeps the project simple.
 - Scoped CSS: component css lives as `.razor.css` next to components (see `Layout/MainLayout.razor.css` and `Layout/NavMenu.razor.css`). Build output includes scoped css in `obj/` during compilation.
 - Nullability: project uses `<Nullable>enable</Nullable>` — follow nullable reference conventions when editing (use `?` and null checks where appropriate).
+
+## Tests and code quality
+
+- Unit tests live in `tests/newhomepage.Tests`. Run them with `dotnet test` from the repo root. The `EventParser` service has focused tests that validate parsing of MM-DD and ISO dates.
+- Quick checks: run `dotnet build` before pushing changes. If you change shared models, update any affected components and run `dotnet test`.
+
+## Making small interactive changes (apply immediately)
+
+- When adding or editing settings in `Pages/Settings.razor`, call `dispatchAppSettings(json)` (JS) or write to `localStorage` and then invoke the static JSInvokable `OnAppSettingsChangedFromJs` from JS to make the client apply changes immediately.
+- The client will re-run weather and events loads when it receives the settings-changed notification. This avoids a full page reload during interactive edits.
 
 ## Security & secrets (must fix)
 
