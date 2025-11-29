@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "eHbEIdvA4suqTLfdjynw0lRGx9U87hytNU1hLnuZ/aM=",
+  "Hash": "6kgVxfLq7trf4SQyzNyY7ANy3f61zRfUBEqWQrxOs1Q=",
   "Source": "newhomepage",
   "BasePath": "/",
   "Mode": "Root",
@@ -7938,6 +7938,25 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/icon-192.png"
+    },
+    {
+      "Identity": "/Users/davidkruggel/repos/newhomepage/wwwroot/icons/gear.svg",
+      "SourceId": "newhomepage",
+      "SourceType": "Discovered",
+      "ContentRoot": "/Users/davidkruggel/repos/newhomepage/wwwroot/",
+      "BasePath": "/",
+      "RelativePath": "icons/gear.svg",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/icons/gear.svg"
     },
     {
       "Identity": "/Users/davidkruggel/repos/newhomepage/wwwroot/index.html",

@@ -1,5 +1,157 @@
 ## Quick orientation
 
+This repository is a Blazor WebAssembly single-page app (TargetFramework: net8.0).
+
+Key entry points
+
+- `Program.cs` — root component registration and DI. `HttpClient` is registered here with BaseAddress set to `builder.HostEnvironment.BaseAddress`.
+- `App.razor` — router and default layout.
+- `Layout/MainLayout.razor` and `Layout/NavMenu.razor` — page shell and navigation patterns.
+  - `Pages/Home.razor` — main app UI: weather, countdowns, JS interop. Shared models live in `Shared/Models`.
+- `wwwroot/` — static assets (CSS under `wwwroot/css`, `index.html`, and `wwwroot/data/events.json`).
+
+When editing UI/behavior, prefer `Pages/*.razor` and the layout files; when editing static content (images, JSON) update `wwwroot/` directly.
+
+---
+
+## Runtime keys, notification hooks, and contracts
+
+- `app-settings` (localStorage key): JSON serialized `AppSettings` (see `Shared/Models/Settings.cs`).
+
+  - Shape (fields you'll see):
+    - `DefaultLocation` (string)
+    - `EventUrgentThresholdDays` (int?)
+    - `NextYearHolidaysIncludeAfter` (MM-DD string)
+  - Usage: the app reads `app-settings` on startup and when signaled. To persist and immediately apply settings from JavaScript, use `dispatchAppSettings(json)` (defined in `wwwroot/index.html`).
+
+- JS -> C# bridge (notification flow):
+  - `dispatchAppSettings(json)` writes to localStorage and attempts to call the static JSInvokable `newhomepage.Shared.Services.SettingsBridge.OnAppSettingsChangedFromJs`.
+  - On C#, `SettingsBridge.OnAppSettingsChangedFromJs` raises `SettingsChanged` (an event). Consumers (e.g., `Pages/Home.razor`) subscribe and rehydrate settings via `JsonSerializer.Deserialize<AppSettings>(json)` and re-run dependent loads.
+
+Contract summary
+
+- Caller: must pass a JSON string matching `AppSettings` to `dispatchAppSettings`.
+- Consumer: `SettingsChanged` handlers should validate and apply settings defensively (guard against malformed JSON).
+
+---
+
+## How to make settings apply immediately (practical steps)
+
+1. Serialize your settings object to JSON.
+2. Call `dispatchAppSettings(json)` from JS or call it using `IJSRuntime` from C#.
+   - This writes to `localStorage['app-settings']` and tries to notify Blazor.
+3. The app subscribes to `SettingsBridge.SettingsChanged` and reloads settings and dependent data (weather, events) automatically.
+
+If Blazor hasn't initialized, `dispatchAppSettings` still writes to localStorage so the app will pick up the changes on next load.
+
+---
+
+## Important patterns & examples
+
+- Local JSON data: use `HttpClient` with relative paths. Example: `await Http.GetStringAsync("data/events.json")`.
+- JS interop: small helpers are registered in `OnAfterRenderAsync` with `IJSRuntime` (see `Home.razor`). If you rename a helper, update both the JS and C# calls.
+- External APIs (used by the client):
+  - Weather: `https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6`
+    - Client reads `Weather:ApiKey` in `wwwroot/appsettings.json`. For production, use a server-side proxy.
+  - Holidays: `https://date.nager.at/api/v3/publicholidays/{year}/US`
+  - Reverse geocode: `https://api.bigdatacloud.net/...`
+
+---
+
+## Build / run / debug (concrete)
+
+- Local dev run (repo root):
+
+```bash
+dotnet run
+```
+
+- Fast-edit loop: `dotnet watch run`.
+- Debugging: use browser DevTools for client errors and `Console.WriteLine` for logs. Attach VS Code/Visual Studio for client debugging.
+
+---
+
+## Optional server-side proxy (weather)
+
+There is a minimal `Server/` project you can run separately to proxy the Weather API.
+
+- Run server locally (if present):
+
+```bash
+dotnet run --project Server/Server.csproj
+```
+
+- The proxy expects `WEATHER_API_KEY` as an environment variable (or modify server config). It exposes `/api/weather?location=...` which the client will use when `Weather:ApiKey` is not configured.
+
+Note: the Server project is optional and intentionally excluded from client build; run it separately when you need a secure key for development.
+
+---
+
+## Tests, CI and quality gates
+
+- Unit tests: `tests/newhomepage.Tests` — run with:
+
+```bash
+dotnet test
+```
+
+- Pre-commit checks (recommended):
+  1. `dotnet build`
+
+2.  `dotnet test`
+3.  Smoke-run the app (`dotnet run`) and verify the changed area in the browser.
+
+- CI notes:
+  - Do not store secrets in the repo. Put secrets in CI secret storage and inject them into any server runtime.
+  - If you need to run integration tests that call external APIs, either mock the HTTP calls or restrict those tests to a gated pipeline that has the necessary credentials.
+
+---
+
+## Security & secrets (must follow)
+
+- Do NOT commit API keys or secrets to `wwwroot/appsettings.json` or any source file.
+- For development only you may use `wwwroot/appsettings.json` with an empty key; for production, configure keys server-side or in CI.
+
+Example `wwwroot/appsettings.json` (safe example):
+
+```json
+{
+  "Weather": { "ApiKey": "" }
+}
+```
+
+---
+
+## Project conventions and developer guidance
+
+- Models: shared types should go in `Shared/Models/*.cs`. Small page-only DTOs may remain inline.
+- Scoped CSS: component CSS goes in `Component.razor.css` beside the component. Global styles live in `wwwroot/css/app.css`.
+- Nullability: project enables `<Nullable>enable</Nullable>` — follow nullable annotations and guard nulls.
+- Accessibility: prefer `aria-live`, roles, and keyboard focus handling for dynamic UI; code already uses an `aria-live` region and accessible toasts.
+
+---
+
+## Troubleshooting & gotchas
+
+- Razor parser issues: literal `<` characters or HTML-like text in Razor can break compilation. Escape or use `@Html.Raw` carefully.
+- localStorage: guard every localStorage call — some environments (private mode) may throw.
+- JS interop timing: `DotNet.invokeMethodAsync` fails if Blazor hasn't started; `dispatchAppSettings` writes to storage first to avoid lost updates.
+- External API rate limits: implement caching on the client (weather cache exists) or use a server-side cache when scaling.
+
+---
+
+## PR checklist
+
+- Run `dotnet build` and `dotnet test` locally.
+- Add unit tests for parsing / business logic changes (see `EventParser` tests as an example).
+- Avoid adding secrets. Document any env vars required to run the server proxy.
+
+---
+
+If you want this doc to include CI YAML snippets, publishing/publish profiles, or a coding style guide, tell me which area to expand and I will add it.
+
+## Quick orientation
+
 This repository is a small Blazor WebAssembly single-page app (TargetFramework: net8.0). Key entry points:
 
 - `Program.cs` — root component registration and DI. HttpClient is registered here with BaseAddress set to `builder.HostEnvironment.BaseAddress`.
@@ -46,61 +198,6 @@ The repository includes a minimal `Server/` project that can proxy the Weather A
 - The proxy expects a server-side environment variable `WEATHER_API_KEY` or you can modify `Program.cs` to read from appsettings. The proxy exposes `/api/weather?location=...` which the client will use automatically when no client `Weather:ApiKey` is configured.
 
 Note: the Server project is optional. If you prefer not to use it, set `Weather:ApiKey` in `wwwroot/appsettings.json` for local dev (remember that shipping keys in client builds is insecure).
+\*\*\* End Patch
 
 ## Project-specific conventions
-
-- Models are often declared inline in `Pages/Home.razor` (see classes like `WeatherData`, `CountdownEvent`, etc.). When adding or reusing models prefer creating a new `Shared/Models` or `Models` file only if the type will be reused across pages — otherwise keeping them next to consumers keeps the project simple.
-- Scoped CSS: component css lives as `.razor.css` next to components (see `Layout/MainLayout.razor.css` and `Layout/NavMenu.razor.css`). Build output includes scoped css in `obj/` during compilation.
-- Nullability: project uses `<Nullable>enable</Nullable>` — follow nullable reference conventions when editing (use `?` and null checks where appropriate).
-
-## Tests and code quality
-
-- Unit tests live in `tests/newhomepage.Tests`. Run them with `dotnet test` from the repo root. The `EventParser` service has focused tests that validate parsing of MM-DD and ISO dates.
-- Quick checks: run `dotnet build` before pushing changes. If you change shared models, update any affected components and run `dotnet test`.
-
-## Making small interactive changes (apply immediately)
-
-- When adding or editing settings in `Pages/Settings.razor`, call `dispatchAppSettings(json)` (JS) or write to `localStorage` and then invoke the static JSInvokable `OnAppSettingsChangedFromJs` from JS to make the client apply changes immediately.
-- The client will re-run weather and events loads when it receives the settings-changed notification. This avoids a full page reload during interactive edits.
-
-## Security & secrets (must fix)
-
-- The app previously contained a hard-coded weather API key. The code now reads `Weather:ApiKey` from `wwwroot/appsettings.json` (sample file added).
-- IMPORTANT: a client-side app cannot keep secrets safe. For production, prefer a server-side proxy or API that keeps secrets off the client. Use the client key only for public / limited-scope keys and rotate regularly.
-
-Example `wwwroot/appsettings.json` (already present in the repo):
-
-```json
-{
-  "Weather": { "ApiKey": "" }
-}
-```
-
-Set the key locally for development only and do not commit secrets. For CI or deploy, wire the key into a secure server-side configuration or secret store and avoid shipping it with the WebAssembly bundle.
-
-## Common maintenance tasks
-
-- Update static events: edit `wwwroot/data/events.json` (JSON array of objects {Event, Date}). The app reads this at runtime via relative path.
-- Update static events: edit `wwwroot/data/events.json` (JSON array of objects {Event, Date}). Dates may be month-day only ("MM-DD") for recurring annual events; the app will compute the next occurrence automatically. The app also accepts full ISO dates (`YYYY-MM-DD`) if you need a one-off date.
-- Change base paths / static assets: edit `wwwroot/index.html` and `wwwroot/css/app.css`.
-- Add new pages: add a `.razor` under `Pages/` and add routes with `@page "/yourroute"`. The router uses `App.razor`.
-
-## When making changes, check these quick validations
-
-1. Run `dotnet build` — compilation should succeed.
-2. Run `dotnet run` and confirm the app loads in the browser and the console shows no unhandled exceptions for the changed area.
-3. For data changes (events.json), verify the UI shows updated items without a rebuild by refreshing the browser (dev server serves static files).
-
-## Do not assume
-
-- Do not assume backend APIs are available in tests or CI — they are live public endpoints. If you need to make the app testable offline, mock `HttpClient` responses or isolate API calls behind an interface so tests can inject a fake.
-
-## Example snippets to search for when editing
-
-- `HttpClient { BaseAddress }` — locate how requests are formed (`Program.cs`).
-- `Http.GetStringAsync("data/events.json")` — locate local JSON data loading (`Pages/Home.razor`).
-- `JSRuntime.InvokeAsync` / `eval` — find JS interop usage (`Pages/Home.razor`).
-
----
-
-If anything above is unclear or you want this file to cover more (CI, publish, or a style guide), tell me which area to expand and I'll update the instructions.

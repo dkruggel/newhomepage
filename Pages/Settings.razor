@@ -32,8 +32,8 @@
 
                 <div class="mb-3">
                     <label class="form-label">Include next-year holidays after (MM-DD)</label>
-                    <input class="form-control" @bind="settings.NextYearHolidaysIncludeAfter" @oninput="ValidateNextYearField"
-                        placeholder="11-01"></input>
+                    <input class="form-control" @bind="settings.NextYearHolidaysIncludeAfter"
+                        @oninput="ValidateNextYearField" placeholder="11-01"></input>
                     <div class="form-text">When the calendar passes this month/day of the current year, holidays for
                         next year will also be fetched.</div>
                     @if (!string.IsNullOrEmpty(nextYearError))
@@ -100,7 +100,13 @@
         {
             var json = JsonSerializer.Serialize(settings);
             // Use the dispatcher which writes to localStorage and notifies the .NET bridge
-            await JSRuntime.InvokeVoidAsync("dispatchAppSettings", json);
+            // Await the dispatch so we can show a confirmation toast after it completes.
+            await JSRuntime.InvokeAsync<object>("dispatchAppSettings", json);
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("createToast", "Settings saved");
+            }
+            catch { }
         }
         catch { }
     }

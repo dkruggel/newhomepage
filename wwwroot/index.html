@@ -122,6 +122,47 @@
         }
         return Promise.resolve();
       };
+
+      // Small accessible toast helper. Creates a transient message at bottom-right.
+      window.createToast = function (text, duration) {
+        try {
+          duration = duration || 3000;
+          var id = 'app-toast';
+          var existing = document.getElementById(id);
+          if (existing) {
+            existing.parentNode.removeChild(existing);
+          }
+
+          var toast = document.createElement('div');
+          toast.id = id;
+          toast.setAttribute('role', 'status');
+          toast.setAttribute('aria-live', 'polite');
+          toast.className = 'app-toast';
+          toast.innerText = text || '';
+
+          document.body.appendChild(toast);
+
+          // Force a reflow then add visible class to trigger CSS transitions
+          // eslint-disable-next-line no-unused-expressions
+          toast.offsetHeight;
+          toast.classList.add('app-toast--visible');
+
+          setTimeout(function () {
+            try {
+              toast.classList.remove('app-toast--visible');
+              setTimeout(function () {
+                try {
+                  toast.remove();
+                } catch (e) {}
+              }, 350);
+            } catch (e) {}
+          }, duration);
+
+          return true;
+        } catch (e) {
+          return false;
+        }
+      };
     </script>
 
     <div id="blazor-error-ui">

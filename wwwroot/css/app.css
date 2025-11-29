@@ -348,6 +348,15 @@ main {
   padding-left: 28px;
 }
 
+/* Nav icon styling (small consistent icons) */
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  vertical-align: -2px;
+  margin-right: 8px;
+  fill: currentColor;
+}
+
 /* Main Content Styles */
 .main-content {
   margin-top: 64px;
@@ -902,5 +911,38 @@ textarea:focus {
   .skeleton::after {
     animation: none;
     display: none;
+  }
+}
+
+/* Simple toast styles */
+.app-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: rgba(33, 37, 41, 0.95);
+  color: var(--dark-text-primary);
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 11000;
+  font-family: 'Varela Round', sans-serif;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.app-toast--visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+@media (max-width: 480px) {
+  .app-toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
   }
 }

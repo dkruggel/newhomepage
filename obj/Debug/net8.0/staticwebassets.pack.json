@@ -41,6 +41,10 @@
       "PackagePath": "staticwebassets/icon-192.png"
     },
     {
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/icons/gear.svg",
+      "PackagePath": "staticwebassets/icons/gear.svg"
+    },
+    {
       "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
     },
