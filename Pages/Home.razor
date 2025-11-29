@@ -4,6 +4,8 @@
 @implements IDisposable
 @inject IJSRuntime JSRuntime
 @inject HttpClient Http
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject newhomepage.Shared.Services.EventParser EventParser
 
 <div class="app-container">
     <!-- Header with Hamburger Menu and Clock -->
@@ -25,7 +27,9 @@
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid navbar-content">
             <a class="navbar-brand" href="#">David Kruggel</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
+                aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -41,7 +45,7 @@
 
     <!-- Side Menu Overlay -->
     <div class="menu-overlay @(isMenuOpen ? "show" : "")" @onclick="CloseMenu"></div>
-    
+
     <!-- Side Menu -->
     <nav class="side-menu @(isMenuOpen ? "open" : "")">
         <div class="menu-header">
@@ -62,16 +66,19 @@
         <div class="card weather-card">
             <div class="card-header">
                 <h2>Weather</h2>
-                <span class="location" @onclick="ChangeLocation">@weatherData?.Location.Name, @weatherData?.Location.Region</span>
+                <span class="location" @onclick="ChangeLocation">@weatherData?.Location.Name,
+                    @weatherData?.Location.Region</span>
             </div>
             <div class="card-body">
-                @if(weatherData != null)
-                    {
+                @if (weatherData != null)
+                {
                     <div class="current-weather">
                         <div class="current-temp">@weatherData.Current.Temp_F°F</div>
                         <div class="current-desc">@weatherData.Current.Condition.Description</div>
-                        <img src="@weatherData.Current.Condition.Icon"/>
-                        <div class="today-temp">@weatherData.Forecast.ForecastDays[0].Day.High°/@weatherData.Forecast.ForecastDays[0].Day.Low°</div>
+                        <img src="@weatherData.Current.Condition.Icon" />
+                        <div class="today-temp">
+                            @weatherData.Forecast.ForecastDays[0].Day.High°/@weatherData.Forecast.ForecastDays[0].Day.Low°
+                        </div>
                     </div>
                     <div class="forecast">
                         @foreach (var day in weatherData.Forecast.ForecastDays.Skip(1))
@@ -87,7 +94,7 @@
                                 </div>
                                 <div class="temp">@day.Day.High°/@day.Day.Low°</div>
                                 <div class="desc">@day.Day.Condition.Description</div>
-                                <img src="@day.Day.Condition.Icon"/>
+                                <img src="@day.Day.Condition.Icon" />
                             </div>
                         }
                     </div>
@@ -127,7 +134,8 @@
                                 }
                                 else
                                 {
-                                    <span class="days-past">@Math.Abs(daysUntil) day@(Math.Abs(daysUntil) == 1 ? "" : "s") ago</span>
+                                    <span class="days-past">@Math.Abs(daysUntil) day@(Math.Abs(daysUntil) == 1 ? "" : "s")
+                                        ago</span>
                                 }
                             </div>
                         </div>
@@ -155,7 +163,7 @@
     {
         // Start the clock timer
         timer = new Timer(UpdateTime, null, TimeSpan.Zero, TimeSpan.FromSeconds(1));
-        
+
         // Load data
         await LoadWeatherData();
         await LoadCountdownEvents();
@@ -166,29 +174,29 @@
         if (firstRender)
         {
             await JSRuntime.InvokeVoidAsync("eval", @"
-                window.getUserLocation = () => {
-                    return new Promise((resolve, reject) => {
-                        if (!navigator.geolocation) {
-                            reject('Geolocation is not supported');
-                            return;
-                        }
-                        
-                        navigator.geolocation.getCurrentPosition(
-                            position => resolve({
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude
-                            }),
-                            error => reject(error.message),
-                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                        );
-                    });
-                };
+window.getUserLocation = () => {
+return new Promise((resolve, reject) => {
+if (!navigator.geolocation) {
+reject('Geolocation is not supported');
+return;
+}
 
-                window.promptForLocation = (currentLocation) => {
-                    const newLocation = prompt('Enter your location (city, state or city, country):', currentLocation || '');
-                    return newLocation;
-                };
-            ");
+navigator.geolocation.getCurrentPosition(
+position => resolve({
+latitude: position.coords.latitude,
+longitude: position.coords.longitude
+}),
+error => reject(error.message),
+{ enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+);
+});
+};
+
+window.promptForLocation = (currentLocation) => {
+const newLocation = prompt('Enter your location (city, state or city, country):', currentLocation || '');
+return newLocation;
+};
+");
         }
         else
         {
@@ -226,11 +234,15 @@
             {
                 // Try to get GPS coordinates
                 var location = await JSRuntime.InvokeAsync<LocationCoords>("getUserLocation");
-                
+
                 // Reverse geocode to get city name
-                var geoResult = await Http.GetStringAsync($"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={location.Latitude}&longitude={location.Longitude}&localityLanguage=en");
-                var geoData = JsonSerializer.Deserialize<GeocodeResult>(geoResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                
+                var geoResult = await
+                Http.GetStringAsync($"https://api.bigdatacloud.net/data/reverse-geocode-client?latitude={location.Latitude}&longitude={location.Longitude}&localityLanguage=en");
+                var geoData = JsonSerializer.Deserialize<GeocodeResult>(geoResult, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
                 if (geoData != null && !string.IsNullOrEmpty(geoData.City))
                 {
                     currentLocation = $"{geoData.City}, {geoData.CountryCode}";
@@ -246,8 +258,11 @@
                 try
                 {
                     var ipResult = await Http.GetStringAsync("https://ipapi.co/json/");
-                    var ipData = JsonSerializer.Deserialize<IPLocationResult>(ipResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    
+                    var ipData = JsonSerializer.Deserialize<IPLocationResult>(ipResult, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
                     if (ipData != null && !string.IsNullOrEmpty(ipData.City))
                     {
                         currentLocation = $"{ipData.Postal}";
@@ -283,15 +298,15 @@
         try
         {
             var newLocation = await JSRuntime.InvokeAsync<string>("promptForLocation", currentLocation);
-            
+
             if (!string.IsNullOrWhiteSpace(newLocation) && newLocation != currentLocation)
             {
                 isLoadingLocation = true;
                 currentLocation = newLocation;
                 StateHasChanged();
-                
+
                 await LoadWeatherData();
-                
+
                 isLoadingLocation = false;
                 StateHasChanged();
             }
@@ -308,10 +323,19 @@
     {
         try
         {
-            var apiKey = "fd12d2e256514c648a204025252808";
-            var forecastResponse = await Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6&aqi=no&alerts=no");
+            // Read API key from configuration (wwwroot/appsettings.json or other configuration provider).
+            var apiKey = Configuration["Weather:ApiKey"] ?? Configuration["WeatherApiKey"];
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                Console.WriteLine("Weather API key not configured. Set 'Weather:ApiKey' in wwwroot/appsettings.json or use a server-side proxy to avoid exposing secrets in the client.");
+                return;
+            }
+
+            var forecastResponse = await
+            Http.GetStringAsync($"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={currentLocation}&days=6&aqi=no&alerts=no");
             weatherData = JsonSerializer.Deserialize<WeatherData>(forecastResponse);
-            
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -331,26 +355,26 @@
             try
             {
                 var json = await Http.GetStringAsync("data/events.json");
-                var personalEvents = JsonSerializer.Deserialize<List<CountdownEvent>>(json, new JsonSerializerOptions
+
+                // Use EventParser service to convert JSON entries to CountdownEvent with resolved next-occurrence dates.
+                var parsed = EventParser.ParsePersonalEvents(json, DateTime.Today);
+                if (parsed != null && parsed.Count > 0)
                 {
-                    PropertyNameCaseInsensitive = true
-                });
-                
-                if (personalEvents != null)
-                {
-                    allEvents.AddRange(personalEvents);
+                    allEvents.AddRange(parsed);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading personal events: {ex.Message}");
-                
-                // Add fallback personal events
+
+                // Add fallback personal events (month/day-only examples)
                 allEvents.AddRange(new List<CountdownEvent>
-                {
-                    new CountdownEvent { Event = "Birthday Party", Date = new DateTime(2025, 9, 15), IsHoliday = false },
-                    new CountdownEvent { Event = "Project Deadline", Date = new DateTime(2025, 8, 30), IsHoliday = false }
-                });
+{
+new CountdownEvent { Event = "Birthday Party", Date = new DateTime(DateTime.Today.Year, 9, 15) >= DateTime.Today ? new
+DateTime(DateTime.Today.Year, 9, 15) : new DateTime(DateTime.Today.Year + 1, 9, 15), IsHoliday = false },
+new CountdownEvent { Event = "Project Deadline", Date = new DateTime(DateTime.Today.Year, 8, 30) >= DateTime.Today ? new
+DateTime(DateTime.Today.Year, 8, 30) : new DateTime(DateTime.Today.Year + 1, 8, 30), IsHoliday = false }
+});
             }
 
             // Load holidays from API
@@ -367,14 +391,14 @@
                 {
                     // Convert holidays to CountdownEvent and filter to only future/recent holidays
                     var holidayEvents = holidays
-                        .Where(h => h.Date >= DateTime.Today) // Include holidays from last 30 days >= DateTime.Today.AddDays(-30)
-                        .Select(h => new CountdownEvent 
-                        { 
-                            Event = $"🎉 {h.Event}", 
-                            Date = h.Date.Date, 
-                            IsHoliday = true 
-                        })
-                        .ToList();
+                    .Where(h => h.Date >= DateTime.Today) // Include holidays from last 30 days >= DateTime.Today.AddDays(-30)
+                    .Select(h => new CountdownEvent
+                    {
+                        Event = $"🎉 {h.Event}",
+                        Date = h.Date.Date,
+                        IsHoliday = true
+                    })
+                    .ToList();
 
                     allEvents.AddRange(holidayEvents);
                 }
@@ -382,25 +406,25 @@
             catch (Exception ex)
             {
                 Console.WriteLine($"Error loading holidays: {ex.Message}");
-                
+
                 // Add some fallback US holidays
                 var fallbackHolidays = new List<CountdownEvent>
-                {
-                    new CountdownEvent { Event = "🎉 Christmas Day", Date = new DateTime(2025, 12, 25), IsHoliday = true },
-                    new CountdownEvent { Event = "🎉 New Year's Day", Date = new DateTime(2026, 1, 1), IsHoliday = true },
-                    new CountdownEvent { Event = "🎉 Independence Day", Date = new DateTime(2025, 7, 4), IsHoliday = true },
-                    new CountdownEvent { Event = "🎉 Thanksgiving", Date = new DateTime(2025, 11, 27), IsHoliday = true }
-                };
-                
+{
+new CountdownEvent { Event = "🎉 Christmas Day", Date = new DateTime(2025, 12, 25), IsHoliday = true },
+new CountdownEvent { Event = "🎉 New Year's Day", Date = new DateTime(2026, 1, 1), IsHoliday = true },
+new CountdownEvent { Event = "🎉 Independence Day", Date = new DateTime(2025, 7, 4), IsHoliday = true },
+new CountdownEvent { Event = "🎉 Thanksgiving", Date = new DateTime(2025, 11, 27), IsHoliday = true }
+};
+
                 allEvents.AddRange(fallbackHolidays.Where(h => h.Date >= DateTime.Today));
             }
-            
+
             // Sort by date and limit to reasonable number
             countdownEvents = allEvents
-                .OrderBy(e => e.Date)
-                .Take(10) // Limit to 10 events to avoid clutter
-                .ToList();
-            
+            .OrderBy(e => e.Date)
+            .Take(10) // Limit to 10 events to avoid clutter
+            .ToList();
+
             StateHasChanged();
         }
         catch (Exception ex)
@@ -408,9 +432,9 @@
             // Final fallback
             Console.WriteLine($"Error in LoadCountdownEvents: {ex.Message}");
             countdownEvents = new List<CountdownEvent>
-            {
-                new CountdownEvent { Event = "Sample Event", Date = DateTime.Today.AddDays(30), IsHoliday = false }
-            };
+{
+new CountdownEvent { Event = "Sample Event", Date = DateTime.Today.AddDays(30), IsHoliday = false }
+};
             StateHasChanged();
         }
     }
@@ -418,109 +442,5 @@
     public void Dispose()
     {
         timer?.Dispose();
-    }
-
-    // Data models
-    public class WeatherData
-    {
-        [JsonPropertyName("location")]
-        public Location Location { get; set; } = new();
-
-        [JsonPropertyName("current")]
-        public Current Current { get; set; } = new();
-
-        [JsonPropertyName("forecast")]
-        public Forecast Forecast { get; set; } = new();
-    }
-
-    public class Location
-    {
-        [JsonPropertyName("name")]
-        public string Name { get; set; } = "";
-
-        [JsonPropertyName("region")]
-        public string Region { get; set; } = "";
-    }
-
-    public class Current {
-        [JsonPropertyName("temp_f")]
-        public double Temp_F { get; set; } = 0.0;
-
-        [JsonPropertyName("condition")]
-        public Condition Condition { get; set; } = new();
-    }
-
-    public class Forecast {
-        [JsonPropertyName("forecastday")]
-        public List<ForecastDay> ForecastDays { get; set; } = new();
-    }
-
-    public class Condition {
-        [JsonPropertyName("text")]
-        public string Description { get; set; } = "";
-
-        [JsonPropertyName("icon")]
-        public string Icon { get; set; } = "";
-    }
-
-    public class ForecastDay
-    {
-        [JsonPropertyName("date")]
-        public string Date { get; set; } = "";
-
-        [JsonPropertyName("day")]
-        public Day Day { get; set; } = new();
-    }
-
-    public class Day {
-        [JsonPropertyName("maxtemp_f")]
-        public double High { get; set; }
-
-        [JsonPropertyName("mintemp_f")]
-        public double Low { get; set; }
-
-        [JsonPropertyName("condition")]
-        public Condition Condition { get; set; } = new();
-    }
-
-    public class CountdownEvent
-    {
-        public string Event { get; set; } = "";
-        public DateTime Date { get; set; }
-        public bool IsHoliday { get; set; } = false;
-    }
-
-    public class HolidayData
-    {
-        public DateTime Date { get; set; }
-        public string LocalName { get; set; } = "";
-        [JsonPropertyName("name")]
-        public string Event { get; set; } = "";
-        public string CountryCode { get; set; } = "";
-        public bool Fixed { get; set; }
-        public bool Global { get; set; }
-    }
-
-    public class LocationCoords
-    {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-    }
-
-    public class GeocodeResult
-    {
-        public string City { get; set; } = "";
-        public string CountryCode { get; set; } = "";
-        public string CountryName { get; set; } = "";
-    }
-
-    public class IPLocationResult
-    {
-        public string City { get; set; } = "";
-        public string CountryCode { get; set; } = "";
-        public string CountryName { get; set; } = "";
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public string Postal { get; set; } = "";
     }
 }

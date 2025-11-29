@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "cXrCmbFGCrFj+yv51R+iGiQcF12U5rUCjUAtA0RI+Li1eJ1H8zovSuygmqwGjRSbGnAi2VqA2v2FxxYEeZl4kw==",
+  "dgSpecHash": "myuvBU+Dhz1RxB+P7gHzGK7GMPMFwupZEy4G0j4/YxJF5jc8peoI73Di7Nm0HDiiMc+122yrHEWiaucSvA6X6Q==",
   "success": true,
-  "projectFilePath": "/Users/davidkruggel/Projects/newhomepage/newhomepage.csproj",
+  "projectFilePath": "/Users/davidkruggel/repos/newhomepage/newhomepage.csproj",
   "expectedPackageFiles": [
     "/Users/davidkruggel/.nuget/packages/microsoft.aspnetcore.authorization/8.0.0/microsoft.aspnetcore.authorization.8.0.0.nupkg.sha512",
     "/Users/davidkruggel/.nuget/packages/microsoft.aspnetcore.components/8.0.0/microsoft.aspnetcore.components.8.0.0.nupkg.sha512",

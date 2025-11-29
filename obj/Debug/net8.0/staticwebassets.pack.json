@@ -1,43 +1,47 @@
 {
   "Files": [
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/bin/Debug/net8.0/wwwroot/_framework/blazor.webassembly.js",
+      "Id": "/Users/davidkruggel/repos/newhomepage/bin/Debug/net8.0/wwwroot/_framework/blazor.webassembly.js",
       "PackagePath": "staticwebassets/_framework/blazor.webassembly.js"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/compressed/ot5h7i0ro5.gz",
+      "Id": "/Users/davidkruggel/repos/newhomepage/obj/Debug/net8.0/compressed/ot5h7i0ro5.gz",
       "PackagePath": "staticwebassets/_framework/blazor.webassembly.js.gz"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/obj/Debug/net8.0/scopedcss/bundle/newhomepage.styles.css",
+      "Id": "/Users/davidkruggel/repos/newhomepage/obj/Debug/net8.0/scopedcss/bundle/newhomepage.styles.css",
       "PackagePath": "staticwebassets/newhomepage.styles.css"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/css/app.css",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/appsettings.json",
+      "PackagePath": "staticwebassets/appsettings.json"
+    },
+    {
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/css/app.css",
       "PackagePath": "staticwebassets/css/app.css"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/css/bootstrap/bootstrap.min.css",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/css/bootstrap/bootstrap.min.css",
       "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/css/bootstrap/bootstrap.min.css.map",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/css/bootstrap/bootstrap.min.css.map",
       "PackagePath": "staticwebassets/css/bootstrap/bootstrap.min.css.map"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/data/events.json",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/data/events.json",
       "PackagePath": "staticwebassets/data/events.json"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/favicon.png",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/favicon.png",
       "PackagePath": "staticwebassets/favicon.png"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/icon-192.png",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/icon-192.png",
       "PackagePath": "staticwebassets/icon-192.png"
     },
     {
-      "Id": "/Users/davidkruggel/Projects/newhomepage/wwwroot/index.html",
+      "Id": "/Users/davidkruggel/repos/newhomepage/wwwroot/index.html",
       "PackagePath": "staticwebassets/index.html"
     },
     {

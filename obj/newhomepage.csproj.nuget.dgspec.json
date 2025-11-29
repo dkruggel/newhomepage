@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/Users/davidkruggel/Projects/newhomepage/newhomepage.csproj": {}
+    "/Users/davidkruggel/repos/newhomepage/newhomepage.csproj": {}
   },
   "projects": {
-    "/Users/davidkruggel/Projects/newhomepage/newhomepage.csproj": {
+    "/Users/davidkruggel/repos/newhomepage/newhomepage.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/davidkruggel/Projects/newhomepage/newhomepage.csproj",
+        "projectUniqueName": "/Users/davidkruggel/repos/newhomepage/newhomepage.csproj",
         "projectName": "newhomepage",
-        "projectPath": "/Users/davidkruggel/Projects/newhomepage/newhomepage.csproj",
+        "projectPath": "/Users/davidkruggel/repos/newhomepage/newhomepage.csproj",
         "packagesPath": "/Users/davidkruggel/.nuget/packages/",
-        "outputPath": "/Users/davidkruggel/Projects/newhomepage/obj/",
+        "outputPath": "/Users/davidkruggel/repos/newhomepage/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/Users/davidkruggel/.nuget/NuGet/NuGet.Config"

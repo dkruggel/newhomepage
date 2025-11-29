@@ -13,31 +13,31 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = browser
 build_property.RootNamespace = newhomepage
 build_property.RootNamespace = newhomepage
-build_property.ProjectDir = /Users/davidkruggel/Projects/newhomepage/
+build_property.ProjectDir = /Users/davidkruggel/repos/newhomepage/
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = false
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = /Users/davidkruggel/Projects/newhomepage
+build_property.MSBuildProjectDirectory = /Users/davidkruggel/repos/newhomepage
 build_property._RazorSourceGeneratorDebug = 
 
-[/Users/davidkruggel/Projects/newhomepage/App.razor]
+[/Users/davidkruggel/repos/newhomepage/App.razor]
 build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/davidkruggel/Projects/newhomepage/Pages/Home.razor]
+[/Users/davidkruggel/repos/newhomepage/Pages/Home.razor]
 build_metadata.AdditionalFiles.TargetPath = UGFnZXMvSG9tZS5yYXpvcg==
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/davidkruggel/Projects/newhomepage/_Imports.razor]
+[/Users/davidkruggel/repos/newhomepage/_Imports.razor]
 build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = 
 
-[/Users/davidkruggel/Projects/newhomepage/Layout/MainLayout.razor]
+[/Users/davidkruggel/repos/newhomepage/Layout/MainLayout.razor]
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L01haW5MYXlvdXQucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-k9spke0mbj
 
-[/Users/davidkruggel/Projects/newhomepage/Layout/NavMenu.razor]
+[/Users/davidkruggel/repos/newhomepage/Layout/NavMenu.razor]
 build_metadata.AdditionalFiles.TargetPath = TGF5b3V0L05hdk1lbnUucmF6b3I=
 build_metadata.AdditionalFiles.CssScope = b-73xn3nmbji
